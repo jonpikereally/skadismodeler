@@ -1,0 +1,1 @@
+{"version": "0.1", "url": "SkadisModeler.zip", "notes": "First version. Pick a SKADIS board size, add STL or 3MF models, and drag them from slot to slot in 3D. SkadisModeler finds each model's hooks, hangs it on real slots, and flags anything that overlaps, misses the slots or hangs off the board."}
