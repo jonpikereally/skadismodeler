@@ -468,6 +468,13 @@ final class AppModel: ObservableObject {
     }
 }
 
-extension Array {
-    subscript(safe i: Int) -> Element? { indices.contains(i) ? self[i] : nil }
+extension BoardScene {
+    func sync(_ model: AppModel) {
+        show(board: model.board, items: model.items.compactMap { item in
+            model.analysis(for: item).map {
+                Shown(item: item, analysis: $0, position: model.position(of: item),
+                      selected: model.selection == item.id, problem: model.hasProblem(item.id))
+            }
+        })
+    }
 }

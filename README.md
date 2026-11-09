@@ -39,6 +39,52 @@ itself up to date from this repo (**SkadisModeler ▸ Check for Updates…**).
   point at your model files, so re-export a design and reopen the layout to see
   the new version in place.
 
+## Planning a board with an LLM
+
+The app carries a command-line tool, `skadis`, so an AI assistant that can run
+shell commands (Claude Code, for one) can plan a board for you: measure your
+models, try a layout, check it fits, look at it, and try again.
+
+```bash
+~/Applications/SkadisModeler.app/Contents/MacOS/skadis help
+```
+
+| Command | What it does |
+|---|---|
+| `skadis boards` | The boards it knows |
+| `skadis inventory <folder>` | Every model's width, height, how far it sticks out, and its hooks |
+| `skadis pack --board ikea76x56 <models…>` | Fit models in order from the top-left |
+| `skadis arrange plan.json -o board.skadis --render board.png` | Place models where a plan says, write a layout the app opens, and draw it |
+| `skadis check board.skadis` | Where everything is and every problem |
+| `skadis render board.skadis -o board.png` | Draw it: `--view front` (flat, with name labels), `side`, `top` or `3d` |
+
+Results are JSON. A plan is a short JSON file: a board, and for each model a
+file and, if you care where it goes, the `left` and `top` of its edges in
+millimetres from the board's left and top edges. Anything without a position is
+fitted into the free space.
+
+```json
+{"board": "ikea76x56",
+ "items": [
+   {"file": "Drill Holder/drill_holder.3mf", "name": "Drill", "left": 600, "top": 380},
+   {"file": "Mic Holder/mic_holder.3mf", "name": "Mics", "left": 30, "top": 30},
+   {"file": "Pliers Holder/pliers_holder.stl"}
+ ]}
+```
+
+To use it, tell your assistant what matters and let it iterate. For example:
+
+> Run `~/Applications/SkadisModeler.app/Contents/MacOS/skadis help`, then plan
+> my 76 × 56 board from the models in `~/3D Prints/Skadis`. Mics together at
+> the top left, hand tools along the right, heavy things low, and leave 60 mm
+> under each holder for the tool. Keep going until `skadis check` says it fits,
+> then show me the picture.
+
+The tool guarantees the result physically fits; what counts as a good layout is
+up to what you tell the assistant. Open the `.skadis` file it writes in
+SkadisModeler to adjust by hand. Drawing pictures needs the Mac's graphics, so
+`render` has to run in a normal Terminal session, not a sandbox.
+
 ## How it finds the hooks
 
 SKÅDIS slots are 5 × 15 mm, in columns 20 mm apart, 40 mm apart within a
@@ -92,8 +138,10 @@ the board and the window to PNGs and drives the 3D view with mouse events.
 
 Source layout: `Mesh.swift` and `ThreeMF.swift` read models, `Board.swift` is
 the slot pattern, `Analysis.swift` finds hooks and footprints, `Layout.swift`
-does the fit checks, `Scene.swift` is the SceneKit view and camera,
-`AppModel.swift` ties it together, `Views.swift` is the SwiftUI window.
+does the fit checks, `Scene.swift` and `BoardView.swift` are the SceneKit scene,
+camera and mouse handling,
+`Planner.swift` reads plans and writes fit reports, `AppModel.swift` ties it
+together, `Views.swift` is the SwiftUI window, and `Tools/skadis` is the command.
 
 ## Privacy
 

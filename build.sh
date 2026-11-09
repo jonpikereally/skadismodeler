@@ -24,9 +24,13 @@ cp Resources/AppIcon.icns SkadisModeler.app/Contents/Resources/AppIcon.icns
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" SkadisModeler.app/Contents/Info.plist
 swiftc -O -target arm64-apple-macos13 -module-cache-path "$CACHE" -suppress-warnings \
   -o SkadisModeler.app/Contents/MacOS/SkadisModeler Sources/SkadisModeler/*.swift
+# The skadis command-line tool rides inside the app, so updates carry it too.
+swiftc -O -target arm64-apple-macos13 -module-cache-path "$CACHE" -suppress-warnings \
+  -o SkadisModeler.app/Contents/MacOS/skadis Tools/skadis/main.swift Sources/SkadisModeler/{Mesh,ThreeMF,Board,Analysis,Layout,Planner,Errors,Version,Scene}.swift
 xattr -cr SkadisModeler.app
+codesign --force --sign - SkadisModeler.app/Contents/MacOS/skadis
 codesign --force --sign - SkadisModeler.app
 # This build copy is for testing. Keep macOS from opening (and the updater
 # from updating) it instead of the installed ~/Applications copy.
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$PWD/SkadisModeler.app" >/dev/null 2>&1 || true
-echo "Built SkadisModeler.app v$VERSION ($BUILT)"
+echo "Built SkadisModeler.app and its skadis command v$VERSION ($BUILT)"

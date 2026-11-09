@@ -4,7 +4,7 @@ import AppKit
 /// on the public error list (ERRORS.md) or pasted into an LLM. Add new codes
 /// here and to ERRORS.md together, and never show an error without one.
 /// Codes are never reused or renumbered: 1xx updates, 2xx model files,
-/// 3xx layouts and the library, 6xx installer scripts, 999 anything else.
+/// 3xx layouts and the library, 4xx the skadis command, 6xx installer scripts, 999 anything else.
 enum ErrorCode: String, CaseIterable {
     case noUpdateSource = "SM-101"
     case badUpdateSource = "SM-102"
@@ -29,6 +29,11 @@ enum ErrorCode: String, CaseIterable {
     case layoutWriteFailed = "SM-303"
     case autosaveFailed = "SM-304"
     case libraryUnreadable = "SM-305"
+    case planMalformed = "SM-401"
+    case unknownBoard = "SM-402"
+    case noGraphics = "SM-403"
+    case outputWriteFailed = "SM-404"
+    case badUsage = "SM-405"
     case unexpected = "SM-999"
 
     var summary: String {
@@ -56,6 +61,11 @@ enum ErrorCode: String, CaseIterable {
         case .layoutWriteFailed: return "Couldn't save the layout file."
         case .autosaveFailed: return "Couldn't remember the current layout for next time."
         case .libraryUnreadable: return "Couldn't read the library folder."
+        case .planMalformed: return "That plan or layout file isn't written the way skadis expects."
+        case .unknownBoard: return "skadis doesn't know that board."
+        case .noGraphics: return "This Mac session can't draw 3D pictures."
+        case .outputWriteFailed: return "Couldn't write the output file."
+        case .badUsage: return "That isn't a skadis command."
         case .unexpected: return "Something unexpected went wrong."
         }
     }
@@ -85,6 +95,11 @@ enum ErrorCode: String, CaseIterable {
         case .layoutWriteFailed: return "Check the folder isn't locked and there's space on the disk, then try again."
         case .autosaveFailed: return "Check there's space on the disk and that ~/Library/Application Support/SkadisModeler isn't locked. Save the layout to a file so nothing is lost."
         case .libraryUnreadable: return "Pick the folder again with Choose Folder in the Library list, and allow access if macOS asks."
+        case .planMalformed: return "Run `skadis help` to see the plan format. The detail says which part was the problem."
+        case .unknownBoard: return "Run `skadis boards` to list the board names, or give a size in millimetres like 760x560."
+        case .noGraphics: return "Run the command from the Terminal app on the Mac itself, not from a sandboxed or remote session. Everything except drawing pictures works without it."
+        case .outputWriteFailed: return "Check the folder exists, isn't locked and has space, then try again."
+        case .badUsage: return "Run `skadis help` to see the commands and their options."
         case .unexpected: return "Try again. If it keeps happening, copy the details and ask for help."
         }
     }

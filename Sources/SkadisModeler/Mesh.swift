@@ -132,3 +132,7 @@ struct Orientation: Codable, Equatable, Hashable {
         return det == 1
     }
 }
+
+extension Array {
+    subscript(safe i: Int) -> Element? { indices.contains(i) ? self[i] : nil }
+}

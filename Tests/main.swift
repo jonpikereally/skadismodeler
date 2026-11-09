@@ -213,5 +213,41 @@ check(model.issues(for: item, analysis: odd, others: []).contains { $0.isProblem
 let other = PlacedItem(path: "/y.stl", part: 0, name: "y", column: slot.0 + 2, level: slot.1)
 check(model.issues(for: item, analysis: a, others: [(other, a)]).contains { $0.text.contains("Overlaps y") }, "overlapping neighbours are named")
 
+// MARK: Plans (what the skadis command reads)
+
+let tmp = URL(fileURLWithPath: ProcessInfo.processInfo.environment["TMPDIR"] ?? NSTemporaryDirectory())
+    .appendingPathComponent("skadis-plan-\(UUID().uuidString)")
+try? FileManager.default.createDirectory(at: tmp.appendingPathComponent("sub"), withIntermediateDirectories: true)
+defer { try? FileManager.default.removeItem(at: tmp) }
+try? binarySTL(sample).write(to: tmp.appendingPathComponent("sub/wide_holder.stl"))
+try? binarySTL(holder(length: 60, columns: [30])).write(to: tmp.appendingPathComponent("small.stl"))
+func plan(_ json: String) throws -> Resolved { try Planner.resolve(Data(json.utf8), relativeTo: tmp) }
+do {
+    let r = try plan(##"{"board": "ikea56x56", "items": [{"file": "sub/wide_holder.stl", "left": 200, "top": 100}, {"file": "small.stl"}, {"file": "small.stl", "column": 4, "level": 8, "name": "Second", "color": "#ff0000"}]}"##)
+    let rep = Planner.report(r)
+    check(rep.items.count == 3 && rep.board.columns == 27, "a plan loads its models, relative to its own folder")
+    check(abs(rep.items[0].left - 200) <= 10 && abs(rep.items[0].top - 100) <= 20 && rep.items[0].fits, "left / top lands on the nearest slot")
+    check(rep.items[0].name == "wide holder" && rep.items[0].hookColumns == 2, "names come from the file, hooks are found")
+    check(rep.items[1].fits && !rep.fits && rep.problemCount >= 1, "an item with no position is fitted into free space")
+    check(r.layout.items[2].column == 4 && r.layout.items[2].name == "Second" && r.layout.items[2].color == RGB(r: 1, g: 0, b: 0), "column / level, name and #rrggbb are taken as given")
+    check(!ikea.hasSlot(4, 8) && !rep.items[2].fits && rep.items[2].problems.contains { $0.contains("between slots") }, "a slot that isn't real is reported, not moved")
+    // A saved layout reads back as a plan and comes out the same.
+    let saved = try JSONEncoder().encode(r.layout)
+    let again = try Planner.resolve(saved, relativeTo: URL(fileURLWithPath: "/"))
+    check(again.layout.items == r.layout.items && again.layout.board == r.layout.board, "a saved .skadis layout reads back unchanged")
+    let two = try plan(#"{"board": "400x300", "items": [{"file": "small.stl", "column": 4, "level": 8}, {"file": "small.stl", "column": 4, "level": 8}]}"#)
+    check(Planner.report(two).problemCount >= 2 && Planner.report(two).board.width == 400, "two models on the same slot are both flagged, on a custom board")
+    let packed = try Planner.pack(board: ikea, files: [tmp.appendingPathComponent("sub/wide_holder.stl"), tmp.appendingPathComponent("small.stl"), tmp.appendingPathComponent("small.stl")])
+    check(Planner.report(packed).fits && packed.layout.items.count == 3, "pack fits everything with no overlaps")
+} catch { check(false, "plans resolve: \(error)") }
+func refused(_ json: String, _ code: ErrorCode, _ what: String) {
+    do { _ = try plan(json); check(false, what) } catch let e as AppError { check(e.code == code, what) } catch { check(false, what) }
+}
+refused(#"{"board": "ikea56x56", "items": [{"left": 3, "top": 4}]}"#, .planMalformed, "an item with no file is refused with SM-401")
+refused(#"{"board": "ikea56x56", "items": [{"file": "small.stl", "left": 3}]}"#, .planMalformed, "left without top is refused with SM-401")
+refused(#"{"board": "billy", "items": []}"#, .unknownBoard, "an unknown board is refused with SM-402")
+refused(#"{"board": "ikea56x56", "items": [{"file": "gone.stl"}]}"#, .modelMissing, "a missing model is refused with SM-206")
+refused(#"{"board": "ikea56x56", "items": [{"file": "small.stl", "part": 3}]}"#, .planMalformed, "a part that isn't there is refused with SM-401")
+
 print(failures == 0 ? "\nAll checks passed." : "\n\(failures) check(s) FAILED.")
 exit(failures == 0 ? 0 : 1)

@@ -16,7 +16,7 @@ Where errors show up:
   buttons. Hovering over the error text points you here.
 - **The status bar** at the bottom of the window shows the last error's code.
   Click it for the full details.
-- **The installers** print their code in the Terminal window.
+- **The `skadis` command** and the installers print their code in the Terminal window.
 - Every error is also logged to `~/Library/Application Support/SkadisModeler/errors.log`.
   The log holds file names and system messages, never what's inside your files.
 
@@ -58,6 +58,16 @@ Where errors show up:
 | SM-303 | Couldn't save the layout file. | Check the folder isn't locked and there's space on the disk, then try again. |
 | SM-304 | Couldn't remember the current layout for next time. | Check there's space on the disk and that ~/Library/Application Support/SkadisModeler isn't locked. Save the layout to a file so nothing is lost. |
 | SM-305 | Couldn't read the library folder. | Pick the folder again with Choose Folder in the Library list, and allow access if macOS asks. |
+
+## The skadis command (4xx)
+
+| Code | What happened | What to try |
+|---|---|---|
+| SM-401 | That plan or layout file isn't written the way skadis expects. | Run `skadis help` to see the plan format. The detail says which part was the problem. |
+| SM-402 | skadis doesn't know that board. | Run `skadis boards` to list the board names, or give a size in millimetres like 760x560. |
+| SM-403 | This Mac session can't draw 3D pictures. | Run the command from the Terminal app on the Mac itself, not from a sandboxed or remote session. Everything except drawing pictures works without it. |
+| SM-404 | Couldn't write the output file. | Check the folder exists, isn't locked and has space, then try again. |
+| SM-405 | That isn't a skadis command. | Run `skadis help` to see the commands and their options. |
 
 ## Installers (6xx)
 

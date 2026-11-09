@@ -12,7 +12,7 @@ cd "$(dirname "$0")"
 VERSION=$(cat VERSION)
 REPO="${REPO:-jonpikereally/skadismodeler}"
 # Every error code used in the app and installer must be on the public error list.
-missing=$(grep -ohE 'SM-[0-9]{3}' Sources/SkadisModeler/*.swift release.sh install.sh | sort -u | while read -r c; do
+missing=$(grep -ohE 'SM-[0-9]{3}' Sources/SkadisModeler/*.swift Tools/skadis/main.swift release.sh install.sh | sort -u | while read -r c; do
   grep -q "^| $c |" ERRORS.md || echo "$c"
 done)
 if [[ -n "$missing" ]]; then
@@ -48,10 +48,17 @@ APP="$DIST/SkadisModeler/SkadisModeler.app"
 mkdir -p "$APP/Contents/MacOS"
 lipo -create -output "$APP/Contents/MacOS/SkadisModeler" \
   "$CACHE/SkadisModeler-arm64" "$CACHE/SkadisModeler-x86_64"
+echo "Building skadis…"
+swiftc -O -target arm64-apple-macos13 -module-cache-path "$CACHE" -suppress-warnings \
+  -o "$CACHE/skadis-arm64" Tools/skadis/main.swift Sources/SkadisModeler/{Mesh,ThreeMF,Board,Analysis,Layout,Planner,Errors,Version,Scene}.swift
+swiftc -O -target x86_64-apple-macos13 -module-cache-path "$CACHE-x86" -suppress-warnings \
+  -o "$CACHE/skadis-x86_64" Tools/skadis/main.swift Sources/SkadisModeler/{Mesh,ThreeMF,Board,Analysis,Layout,Planner,Errors,Version,Scene}.swift
+lipo -create -output "$APP/Contents/MacOS/skadis" "$CACHE/skadis-arm64" "$CACHE/skadis-x86_64"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 mkdir -p "$APP/Contents/Resources"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
+codesign --force --sign - "$APP/Contents/MacOS/skadis"   # the helper first, or the bundle won't sign
 codesign --force --sign - "$APP"
 
 cat > "$DIST/SkadisModeler/Install SkadisModeler.command" <<INSTALL
@@ -97,6 +104,10 @@ USE
 3. Drag a model to move it from slot to slot. Drag the board to look around,
    scroll to zoom. Anything that overlaps, misses the slots or hangs off the
    board turns red and says why.
+
+WITH AN LLM
+The app carries a command-line tool an AI assistant can drive to plan a board:
+  ~/Applications/SkadisModeler.app/Contents/MacOS/skadis help
 
 PRIVACY
 SkadisModeler only reads the model files you add. No accounts, no analytics.
